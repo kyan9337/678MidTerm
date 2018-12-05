@@ -1,12 +1,12 @@
 ---
-title: "Best Runner of NCAA College Football Players in Season 2012"
+title: "Report"
 author: "Kaiyu Yan"
-date: "Nov 28, 2018"
-output: html_document
+date: "December 4, 2018"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F)
 ```
 
 ```{r}
@@ -18,21 +18,52 @@ library(knitr)
 
 #Introduction
 ##Background
+\vspace{12pt}
+Trying to determine who was the best quarterback or running back through out the year is usually an interesting topic for media and college football fans. Also, to win a game, coach always need to put his best players on the field. Therefore, identifying and projecting the performance for players is particularly important for a team. People like to take one of the most basic statistic to measure performance. For example, yards per attempt(YPA), we like to use this measurement to determine the performance of a quarterback or running back's performance. However, for most time, when we look at the leaders in yards per attempt, we will notice that the statistical data is not useful. Because the highest yards per attempt always dependent on the lowest number of attempts as shown in table 1.1. 
+\vspace{12pt}
+##Objective
+\vspace{12pt}
+The main objective of this project is trying to build a model that will generalize the most unbiased information to help us to determine the best performed player based on certain measurement.The potential implication of this project could provide suggestion for team on how to pick best performance as starter.
 
-Trying to determine who was the best quarterback or running back through out the year is usually an interesting topic for media and college football fans. Also, to win a game, coach always need to put his best players on the field. Therefore, identifying and projecting the performance for players is particularly important for a team. People like to take one of the most basic statistic to measure performance. For example, yards per attempt(YPA), we like to use this measurement to determine the performance of a quarterback or running back's performance. However, for most time, when we look at the leaders in yards per attempt, we will notice that the statistical data is not useful. Because the highest yards per attempt always dependent on the lowest number of attempts as shown in table 1.1. Therefore, for this project, we are trying to build a model that will generalize the most unbiased information to help us to determine the best performed player based on certain measurement.
-
-```{r}
-img1_path <- "picture1.PNG"
-img1 <- readPNG(img1_path, native = TRUE, info = TRUE)
+```{r,scale=2}
+img_path1 <- "picture1.PNG"
+img1 <- readPNG(img_path1, native = TRUE, info = TRUE)
 # Small fig.width
-include_graphics(img1_path)
+include_graphics(img_path1)
 ```
 
-
+<div class="green4">
+Table 1.1 : Leaders in Yards Per Attempt for the 2012 season 
+</div>
 
 
 #Data and Method
-## Data Source
+## Data Source and Description
+The data are from two different sites. Some of them are from Kaggle.com while some data such as power-index was scraped from espn.com. All the data are real and published on the website. I've also used several other site such as sports-reference.com to compare the data realness. 
+###Description of data
+The data used in this project is real statistic data of NCAA College Footbal for the 2012 season.
+The data include the following information:
+1) Attempt: The total number of a player attempt to carry a ball to run in the season.       
+2) Yards: The total yards of a player gained in the season.
+3) YPA: Yards per attempt of a player gained in the season.           
+4) Position: Player's position of the field.
+5) Fullname: Player's name.    
+6) TEAM:Team in NCAA FBS Division.         
+7) FPI: Football power index of each team.   
+8) OFFENSE: Team offense efficiency index.   
+9) DEFENSE: Team defense efficiency index.  
+10) OVERALL: Team overall efficiency index.
+11) Rush.Att:  
+12) Rush.Yard   
+13) YPC
+14) Opp.Att.Allowed
+15) Opp.Yds.Allowed
+16) Opp.Ypc.Allowed
+17) Opp.Ypg.Allowed
+18) Opp.FPI    
+19) Opp.Def.Eff
+20) Opp.Overall.Eff
+
 ## Model Used
 
 #EDA and Result
@@ -124,10 +155,7 @@ Player_rush <- inner_join(Player_rush,Team,by ="Team.Code1" )
 Player_rush <- select(Player_rush,-4,-8)
 Player_rush <- inner_join(Player_rush,Team_stats,by = "TEAM")
 
-DT::datatable(Player_rush,
-          filter = 'top', options = list(
-            pageLength = 12, autoWidth = TRUE
-          ))
+
 ```
 
 
