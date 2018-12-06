@@ -1,0 +1,309 @@
+---
+title: "Report"
+author: "Kaiyu Yan"
+date: "December 4, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+```{r}
+library(png)
+library(knitr)
+```
+
+#Abstract
+
+#Introduction
+##Background
+\vspace{12pt}
+Trying to determine who was the best quarterback or running back through out the year is usually an interesting topic for media and college football fans. Also, to win a game, coach always need to put his best players on the field. Therefore, identifying and projecting the performance for players is particularly important for a team. People like to take one of the most basic statistic to measure performance. For example, yards per attempt(YPA), we like to use this measurement to determine the performance of a quarterback or running back's performance. However, for most time, when we look at the leaders in yards per attempt, we will notice that the statistical data is not useful. Because the highest yards per attempt always dependent on the lowest number of attempts as shown in table 1.1. 
+\vspace{12pt}
+
+```{r,scale=2,warning=FALSE}
+img_path1 <- "picture1.PNG"
+img1 <- readPNG(img_path1, native = TRUE, info = TRUE)
+# Small fig.width
+include_graphics(img_path1)
+```
+
+<div class="green4">
+Table 1.1 : Leaders in Yards Per Attempt for the 2012 season 
+</div>
+
+```{r,scale=2,warning=FALSE}
+img_path2 <- "picture2.PNG"
+img1 <- readPNG(img_path2, native = TRUE, info = TRUE)
+# Small fig.width
+include_graphics(img_path2)
+```
+
+<div class="green4">
+Table 1.2 : Leaders in Yards Per Attempt for the 2012 season 
+</div>
+
+
+
+##Objective
+\vspace{12pt}
+The main objective of this project is trying to build a model that will generalize the most unbiased information to help us to determine the best performed player based on certain measurement.The potential implication of this project could provide suggestion for team on how to pick best performance as starter.
+
+
+#Data and Method
+## Data Source and Description
+The data are from two different sites. Some of them are from Kaggle.com while some data such as power-index was scraped from espn.com. All the data are real and published on the website. I've also used several other site such as sports-reference.com to compare the data realness. 
+
+###Description of data
+The data used in this project is real statistic data of NCAA College Footbal for the 2012 season.
+The data include the following information:
+1) Attempt: The total number of a player attempt to carry a ball to run in the season.       
+2) Yards: The total yards of a player gained in the season.
+3) YPA: Yards per attempt of a player gained in the season.           
+4) Position: Player's position of the field.
+5) Fullname: Player's name.    
+6) TEAM:Team in NCAA FBS Division.         
+7) FPI: Football power index of each team.   
+8) OFFENSE: Team offense efficiency index.   
+9) DEFENSE: Team defense efficiency index.  
+10) OVERALL: Team overall efficiency index.
+11) Rush.Att:  Team total rush attempted in season 2012.
+12) Rush.Yard: Team total rush yards in season 2012.
+13) YPC: Team yard gained per carry in season 2012.
+14) Opp.Att.Allowed: Total number of rushing attempt allowed for opponent team.
+15) Opp.Yds.Allowed: Total rushing yards allowed for opponent team.
+16) Opp.Ypc.Allowed: Rushing yards per carry allowed for opponent team.
+17) Opp.Ypg.Allowed: Rushing yards per game allowed for opponent team.
+18) Opp.FPI: Opponent power index.    
+19) Opp.Def.Eff: Opponent team deffense efficiency.
+20) Opp.Overall.Eff: Opponent team overall efficiency.
+
+
+```{r,warning=FALSE}
+library(tidyverse)
+Data_2012 <- read.csv("team-game-statistics.csv")
+
+Team <- read.csv("team.csv")
+team_defense <- read.csv("team-defense.csv")
+team_efficient <- read.csv("team-efficient.csv")
+power_index <- read.csv("power-index.csv")
+schedule <- read.csv("game.csv")
+Player_rush <- read.csv("rush.csv")
+player <- read.csv("player.csv")
+```
+
+```{r,warning=FALSE}
+rushing_stats <- aggregate(Data_2012[,3:4],list(Data_2012$Team.Code),sum)
+colnames(rushing_stats)[1] <- "Team.Code"
+rushing_stats <- inner_join(rushing_stats,Team,by = "Team.Code")
+rushing_stats <- mutate(rushing_stats,YPC = Rush.Yard/Rush.Att)
+colnames(Team)[2] <- "TEAM"
+colnames(rushing_stats)[4] <- "TEAM"
+A <- inner_join(power_index,Team,by = "TEAM")
+A <- inner_join(A,team_efficient,by = "TEAM")
+A <- inner_join(A,team_defense,by="TEAM")
+A <- inner_join(A,rushing_stats,by="TEAM")
+colnames(schedule)[3] <- "Team.Code"
+schedule <- inner_join(schedule,Team,by = "Team.Code")
+colnames(schedule)[4] <- "Team.Code1"
+colnames(Team)[1] <- "Team.Code1"
+schedule <- inner_join(schedule,Team,by = "Team.Code1")
+schedule <- select(schedule,1,7,9)
+colnames(schedule)[2] <- "Home Team"
+colnames(schedule)[3] <- "Away Team"
+dat <- as.data.frame(NULL)
+for (i in 1:93){
+  A1 <- filter(schedule,schedule$`Home Team` == A[i,2])
+  A2 <- filter(schedule,schedule$`Away Team` == A[i,2])
+  A2 <- A2[c(1,3,2)]
+  colnames(A2)[2] <- "Home Team"
+colnames(A2)[3] <- "Away Team"
+  B <- rbind(A1,A2)
+  dat <- rbind(dat,B)
+}
+colnames(dat)[3] <- "TEAM"
+dat <- inner_join(dat,team_defense,by="TEAM")
+dat <- inner_join(dat,power_index,by="TEAM")
+dat <- inner_join(dat,team_efficient,by="TEAM")
+dat <- select(dat,1:8,10,13,15)
+Oppo_defense <- aggregate(dat[,5:11],list(dat$`Home Team`),mean)
+colnames(Oppo_defense)[2] <- "Opp.Att.Allowed"
+colnames(Oppo_defense)[3] <- "Opp.Yds.Allowed"
+colnames(Oppo_defense)[4] <- "Opp.Ypc.Allowed"
+colnames(Oppo_defense)[5] <- "Opp.Ypg.Allowed"
+colnames(Oppo_defense)[1] <- "TEAM"
+colnames(Oppo_defense)[6] <- "Opp.FPI"
+colnames(Oppo_defense)[7] <- "Opp.Def.Eff"
+colnames(Oppo_defense)[8] <- "Opp.Overall.Eff"
+
+
+Team_stats <- select(A,2,3,7,8,10,17,18,20)
+Team_stats <- inner_join(Team_stats,Oppo_defense,by = "TEAM")
+
+Player_rush <- aggregate(Player_rush[,5:6],list(Player_rush$Player.Code),sum)
+Player_rush <- mutate(Player_rush,YPA = Yards/Attempt)
+player$Fullname <- as.character(paste(player$First.Name,player$Last.Name, sep = " "))
+player <- select(player,1,2,7,14)
+colnames(Player_rush)[1] <- "Player.Code"
+Player_rush <- inner_join(Player_rush,player,by="Player.Code")
+# Player_rush <- filter(Player_rush,Position == "RB")
+Player_rush$Position <- as.character(Player_rush$Position)
+ Player_rush$Position[Player_rush$Position == ""] <- NA
+ Player_rush$Attempt[Player_rush$Attempt<1]  <- NA 
+ Player_rush <- na.omit(Player_rush)
+Player_rush <- select(Player_rush,-1)
+colnames(Player_rush)[4] <- "Team.Code1"
+Player_rush <- inner_join(Player_rush,Team,by ="Team.Code1" )
+Player_rush <- select(Player_rush,-4,-8)
+Player_rush <- inner_join(Player_rush,Team_stats,by = "TEAM")
+Player_rush1 <- filter(Player_rush,Position == "RB")
+
+```
+
+
+#EDA and Result
+##EDA
+
+As a NCAA college football fan, I have some knowledge of football stats and I also have some expection of my data exploration. I'm expecting a lower number of players runs the ball more time. I'm also expecting a player will have higher YPA when his team are better and the opponent FPI or opponent defense efficiency are low. 
+
+## 1. Yards per Carry vs. Number of Attempt
+```{r,warning=FALSE}
+ggplot(data = Player_rush)+
+  geom_point(mapping = aes(x=Attempt,y = YPA))+
+  xlab("Number of rush")+
+  ylab("Yards per Attempt")+
+  labs(title= "All Player's Yards per carry VS Number of Attempt",
+       subtitle="Effect of number of runs on YPA")+
+  theme_classic()
+
+ggplot(data = Player_rush1)+
+  geom_point(mapping = aes(x=Attempt,y = YPA))+
+  xlab("Number of rush")+
+  ylab("Yards per Attempt")+
+  labs(title= "All Running back's Yards per carry VS Number of Attempt",
+       subtitle="Effect of number of runs on YPA")+
+  theme_classic()
+```
+
+For those two plots, I displayed the relationship and effect between yards per attempt and the number of attempt. it doesn't account for the quality of opposition faced or the strength of own team. You can find that for all player position and running back player, they have similer trend for yards per attempt and number of rush.
+
+##2. Distribution of Rushing Attempt and Yards per Carry
+```{r,warning=FALSE}
+ggplot(data = Player_rush1) +
+  aes(x = YPA) +
+  geom_histogram(bins = 50, fill = "#0c4c8a",colour="black") +
+  xlab("Yards per Attempt")+
+  ylab("Count")+
+  labs(title= "Distribution of YPA accross all running back")+
+  theme_classic()
+
+ggplot(data = Player_rush1) +
+  aes(x = Attempt) +
+  geom_histogram(bins = 20, fill = "#0c4c8a", colour="black") +
+  xlab("Number of rush")+
+  ylab("Count")+
+  labs(title= "Distribution of rushing attempts")+
+  theme_classic()
+```
+Those two graphs above shows the distribution of YPA and rushing attempts. From both plots I can say that it consist with my expectation. The distribution of YPA is knid of a normal distribution with some outliers and the count of rushing attempts will decreasing with more attempts.
+
+
+##3. Relationship between YPA and other variables.
+```{r,warning=FALSE}
+ggplot(data = Player_rush1) +
+  aes(x = FPI, y = YPA) +
+  geom_point(color = "blue4") +
+  geom_smooth(se = F) +
+  xlab("Team Power Index")+
+  ylab("Yards per Carry")+
+  labs(title= "Yards per carry vs. Team power index")
+  theme_classic()
+```
+```{r,warning=FALSE}
+ggplot(data = Player_rush1) +
+  aes(x = Opp.FPI, y = YPA) +
+  geom_point(color = "#0c4c8a") +
+  geom_smooth(se = F) +
+  xlab("Oppoent Power Index")+
+  ylab("Yards per Carry")+
+  labs(title= "Yards per carry vs. Opponent power index")+
+  theme_classic()
+```
+I've made those two plot to explore the relationship between YPA of a player with the strength of his own team and the opponent team. Although it is not very clear, but figure 2.5 shows that a player will have higher YPA when his team has a higher power index. 
+
+```{r,warning=FALSE}
+ggplot(data = Player_rush1) +
+  aes(x = Opp.Yds.Allowed, y = YPA) +
+  geom_point(color = "#0c4c8a") +
+  geom_smooth(se = F) +
+  xlab("Oppoent total rushing yards allowed")+
+  ylab("Yards per Carry")+
+  labs(title= "Yards per carry vs. Opponent yards allowed")+
+  theme_classic()
+
+ggplot(data = Player_rush1) +
+  aes(x = Opp.Def.Eff, y = YPA) +
+  geom_point(color = "#0c4c8a") +
+  geom_smooth(se = F) +
+  xlab("Opponent defense efficiency")+
+  ylab("Yards per carry")+
+  labs(title= "Yards per carry vs. Opponent defense efficiency")+
+  theme_classic()
+
+
+```
+
+For Figure 2.7, we can find that a player will have lower YPA when his opponent has a higher total rushing yards allowed. Figure 2.8 shows that a higher opponent defense efficiency will leads to a lower YPA. 
+
+
+## Model Used
+\vspace{12pt}
+
+Models selected to explain the YPA variable are:
+\vspace{12pt}
+-- Linear Model
+-- Multilevel Mixed effect Moderl
+
+##Model Choice
+##Interpretation
+##Model Checking
+
+#Discussion
+##Limitation
+##Future Direction
+
+```{r,warning=FALSE}
+Player_rush2 <- select(Player_rush1,1:3,7:20)
+correlations <- cor(Player_rush2)
+library(corrplot)
+library(car)
+corrplot(correlations,method="circle")
+```
+
+```{r,warning=FALSE}
+fit1 <- lm(YPA~ Attempt+FPI+OFFENSE+OVERALL+Rush.Att+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,data = Player_rush1)
+summary(fit1)
+plot(fit1, which = 1)
+ par(mfrow= c(2,3))
+plot(fit1, which = 1:6)
+residualPlots(fit1, terms= ~ 1, fitted=TRUE)
+outlierTest(fit1)
+par (mar=c(3,3,2,1), mgp=c(2,.7,0), tck=-.01)
+influenceIndexPlot(fit1, id.n=5)
+influencePlot(fit1, id.n=5)
+spreadLevelPlot(fit1)
+marginalModelPlots(fit1)
+
+library(nlme)
+m1 <- lme(fixed = YPA~ Attempt+FPI+OFFENSE+OVERALL+Rush.Att+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,random = ~1|TEAM,data=Player_rush1) 
+summary(m1)
+
+library(lme4)
+m2 <- lmer(YPA~ FPI+ (1|TEAM),Player_rush)
+summary(m2)
+head(fixef(m2))
+head(ranef(m2)$TEAM)
+head(coef(m2)$TEAM)
+
+```
