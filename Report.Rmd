@@ -10,8 +10,15 @@ knitr::opts_chunk$set(echo = F)
 ```
 
 ```{r}
+library(tidyverse)
 library(png)
 library(knitr)
+library(coefplot)
+library(ggplot2)
+library(corrplot)
+library(car)
+library(nlme)
+library(lme4)
 ```
 
 #Abstract
@@ -81,7 +88,7 @@ The data include the following information:
 
 
 ```{r,warning=FALSE}
-library(tidyverse)
+
 Data_2012 <- read.csv("team-game-statistics.csv")
 
 Team <- read.csv("team.csv")
@@ -210,21 +217,20 @@ Those two graphs above shows the distribution of YPA and rushing attempts. From 
 
 
 ##3. Relationship between YPA and other variables.
-```{r,warning=FALSE}
+```{r,warning=FALSE,comment=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = FPI, y = YPA) +
   geom_point(color = "blue4") +
-  geom_smooth(se = F) +
-  xlab("Team Power Index")+
-  ylab("Yards per Carry")+
-  labs(title= "Yards per carry vs. Team power index")
+  geom_smooth(method = 'loess',formula = y ~ x ,se = F) +
+  labs(title= "Yards per carry vs. Team power index")+
   theme_classic()
 ```
-```{r,warning=FALSE}
+
+```{r,warning=FALSE,comment=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = Opp.FPI, y = YPA) +
-  geom_point(color = "#0c4c8a") +
-  geom_smooth(se = F) +
+  geom_point(color = "black") +
+  geom_smooth(method = 'loess',formula = y ~ x ,se = F) +
   xlab("Oppoent Power Index")+
   ylab("Yards per Carry")+
   labs(title= "Yards per carry vs. Opponent power index")+
@@ -236,7 +242,7 @@ I've made those two plot to explore the relationship between YPA of a player wit
 ggplot(data = Player_rush1) +
   aes(x = Opp.Yds.Allowed, y = YPA) +
   geom_point(color = "#0c4c8a") +
-  geom_smooth(se = F) +
+  geom_smooth(method = 'loess',formula = y ~ x ,se = F) +
   xlab("Oppoent total rushing yards allowed")+
   ylab("Yards per Carry")+
   labs(title= "Yards per carry vs. Opponent yards allowed")+
@@ -245,7 +251,7 @@ ggplot(data = Player_rush1) +
 ggplot(data = Player_rush1) +
   aes(x = Opp.Def.Eff, y = YPA) +
   geom_point(color = "#0c4c8a") +
-  geom_smooth(se = F) +
+  geom_smooth(method = 'loess',formula = y ~ x ,se = F) +
   xlab("Opponent defense efficiency")+
   ylab("Yards per carry")+
   labs(title= "Yards per carry vs. Opponent defense efficiency")+
@@ -261,11 +267,81 @@ For Figure 2.7, we can find that a player will have lower YPA when his opponent 
 \vspace{12pt}
 
 Models selected to explain the YPA variable are:
+
+1. Linear Model 
 \vspace{12pt}
--- Linear Model
--- Multilevel Mixed effect Moderl
+2. Multilevel Mixed effect Moderl
 
 ##Model Choice
+### Variable selection
+Outcome Variable - YPA
+###
+Classic Linear Regression
+```{r}
+# Model 1
+fit1 <- lm(YPA~ Attempt+FPI+OVERALL+YPC,data = Player_rush1)
+# Residual plot
+plot(fit1)
+# Confidence interval
+coefplot(fit1)
+kable(head(confint(fit1)))
+# Actual vs Fitted
+plot(log(Player_rush1$YPA), fitted(fit1),xlab="actual value",ylab="fitted values")+
+  abline(v=15,h=15,0,1, col="red")
+
+# Model 2
+fit2 <- lm(YPA~Opp.Att.Allowed+Opp.Yds.Allowed+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,data = Player_rush1)
+# Residual plot
+plot(fit2, which = 1)
+# Confidence interval
+coefplot(fit2)
+kable(head(confint(fit2)))
+# Actual vs Fitted
+plot(log(Player_rush1$YPA), fitted(fit2),xlab="actual value",ylab="fitted values")+
+  abline(v=15,h=15,0,1, col="red")
+
+# Model 3
+fit3 <- lm(YPA ~ Attempt+Rush.Att+OFFENSE+YPC+OVERALL+FPI+YPC:Opp.Ypc.Allowed,data = Player_rush1)
+# Residual plot
+plot(fit3, which = 1)
+# Confidence interval
+coefplot(fit3)
+kable(confint(fit3))
+# Actual vs Fitted
+plot(log(Player_rush1$YPA), fitted(fit3),xlab="actual value",ylab="fitted values")+
+  abline(v=15,h=15,0,1, col="red")
+
+
+# Outliertest - Detecting the Unusual Data
+outlierTest(fit1)
+influenceIndexPlot(fit1)
+hatvalues(fit1)
+par(mfrow=c(1,3))
+plot(1:100,resid(fit1)[1:100]); abline(h=0,lty=2,col="grey",main="fitted vs residual")
+acf(resid(fit1))
+pacf(resid(fit1))
+
+anova(fit1, fit2, fit3)
+lrtest(fit1, fit2, fit3)
+```
+### Multilevel Modelling
+```{r,warning=FALSE}
+
+m1 <- lmer(YPA~Attempt+FPI+OFFENSE+OVERALL+Rush.Att+YPC*Opp.Ypc.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff+(1|TEAM),data=Player_rush1) 
+display(m1)
+coefplot(m1)
+
+m2 <- lmer(YPA~ Attempt+FPI*Opp.FPI+OVERALL*Opp.Overall.Eff+Rush.Att +(0+YPC|TEAM),Player_rush1)
+display(m2)
+coefplot(m2)
+
+m3 <- lmer(YPA~ OFFENSE+OVERALL+Attempt+(1|Attempt)+(1|YPC)+(0+FPI|TEAM),Player_rush1)
+display(m3)
+coefplot(m3)
+
+
+anova(m1, m2, m3, refit = FALSE)
+```
 ##Interpretation
 ##Model Checking
 
@@ -276,34 +352,7 @@ Models selected to explain the YPA variable are:
 ```{r,warning=FALSE}
 Player_rush2 <- select(Player_rush1,1:3,7:20)
 correlations <- cor(Player_rush2)
-library(corrplot)
-library(car)
+
 corrplot(correlations,method="circle")
 ```
 
-```{r,warning=FALSE}
-fit1 <- lm(YPA~ Attempt+FPI+OFFENSE+OVERALL+Rush.Att+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,data = Player_rush1)
-summary(fit1)
-plot(fit1, which = 1)
- par(mfrow= c(2,3))
-plot(fit1, which = 1:6)
-residualPlots(fit1, terms= ~ 1, fitted=TRUE)
-outlierTest(fit1)
-par (mar=c(3,3,2,1), mgp=c(2,.7,0), tck=-.01)
-influenceIndexPlot(fit1, id.n=5)
-influencePlot(fit1, id.n=5)
-spreadLevelPlot(fit1)
-marginalModelPlots(fit1)
-
-library(nlme)
-m1 <- lme(fixed = YPA~ Attempt+FPI+OFFENSE+OVERALL+Rush.Att+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,random = ~1|TEAM,data=Player_rush1) 
-summary(m1)
-
-library(lme4)
-m2 <- lmer(YPA~ FPI+ (1|TEAM),Player_rush)
-summary(m2)
-head(fixef(m2))
-head(ranef(m2)$TEAM)
-head(coef(m2)$TEAM)
-
-```
