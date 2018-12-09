@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = F)
 ```
 
-```{r}
+```{r,echo = FALSE,comment=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
 library(png)
 library(knitr)
@@ -19,14 +19,14 @@ library(corrplot)
 library(car)
 library(nlme)
 library(lme4)
+library(arm)
+library(dplyr)
 ```
-
-#Abstract
 
 #Introduction
 ##Background
 \vspace{12pt}
-Trying to determine who was the best quarterback or running back through out the year is usually an interesting topic for media and college football fans. Also, to win a game, coach always need to put his best players on the field. Therefore, identifying and projecting the performance for players is particularly important for a team. People like to take one of the most basic statistic to measure performance. For example, yards per attempt(YPA), we like to use this measurement to determine the performance of a quarterback or running back's performance. However, for most time, when we look at the leaders in yards per attempt, we will notice that the statistical data is not useful. Because the highest yards per attempt always dependent on the lowest number of attempts as shown in table 1.1. 
+Trying to determine who was the best quarterback or running back through out the year is usually an interesting topic for media and college football fans. Also, to win a game, coach always need to put his best players on the field. Therefore, identifying and projecting the performance for players is particularly important for a team. People like to take one of the most basic statistic to measure performance. For example, yards per attempt(YPA), we like to use this measurement to determine the performance of a quarterback or running back's performance. However, for most time, when we look at the leaders in yards per attempt, we will notice that the statistical data is not useful. Because the highest yards per attempt always dependent on the lowest number of attempts as shown in table 1.1 and table 1.2. 
 \vspace{12pt}
 
 ```{r,scale=2,warning=FALSE}
@@ -48,7 +48,7 @@ include_graphics(img_path2)
 ```
 
 <div class="green4">
-Table 1.2 : Leaders in Yards Per Attempt for the 2012 season 
+Table 1.2 : Running Back Leaders in Yards Per Attempt for the 2012 season 
 </div>
 
 
@@ -87,7 +87,7 @@ The data include the following information:
 20) Opp.Overall.Eff: Opponent team overall efficiency.
 
 
-```{r,warning=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 
 Data_2012 <- read.csv("team-game-statistics.csv")
 
@@ -100,7 +100,7 @@ Player_rush <- read.csv("rush.csv")
 player <- read.csv("player.csv")
 ```
 
-```{r,warning=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 rushing_stats <- aggregate(Data_2012[,3:4],list(Data_2012$Team.Code),sum)
 colnames(rushing_stats)[1] <- "Team.Code"
 rushing_stats <- inner_join(rushing_stats,Team,by = "Team.Code")
@@ -116,7 +116,7 @@ schedule <- inner_join(schedule,Team,by = "Team.Code")
 colnames(schedule)[4] <- "Team.Code1"
 colnames(Team)[1] <- "Team.Code1"
 schedule <- inner_join(schedule,Team,by = "Team.Code1")
-schedule <- select(schedule,1,7,9)
+schedule <- dplyr::select(schedule,1,7,9)
 colnames(schedule)[2] <- "Home Team"
 colnames(schedule)[3] <- "Away Team"
 dat <- as.data.frame(NULL)
@@ -133,7 +133,7 @@ colnames(dat)[3] <- "TEAM"
 dat <- inner_join(dat,team_defense,by="TEAM")
 dat <- inner_join(dat,power_index,by="TEAM")
 dat <- inner_join(dat,team_efficient,by="TEAM")
-dat <- select(dat,1:8,10,13,15)
+dat <- dplyr::select(dat,1:8,10,13,15)
 Oppo_defense <- aggregate(dat[,5:11],list(dat$`Home Team`),mean)
 colnames(Oppo_defense)[2] <- "Opp.Att.Allowed"
 colnames(Oppo_defense)[3] <- "Opp.Yds.Allowed"
@@ -145,13 +145,13 @@ colnames(Oppo_defense)[7] <- "Opp.Def.Eff"
 colnames(Oppo_defense)[8] <- "Opp.Overall.Eff"
 
 
-Team_stats <- select(A,2,3,7,8,10,17,18,20)
+Team_stats <- dplyr::select(A,2,3,7,8,10,17,18,20)
 Team_stats <- inner_join(Team_stats,Oppo_defense,by = "TEAM")
 
 Player_rush <- aggregate(Player_rush[,5:6],list(Player_rush$Player.Code),sum)
 Player_rush <- mutate(Player_rush,YPA = Yards/Attempt)
 player$Fullname <- as.character(paste(player$First.Name,player$Last.Name, sep = " "))
-player <- select(player,1,2,7,14)
+player <- dplyr::select(player,1,2,7,14)
 colnames(Player_rush)[1] <- "Player.Code"
 Player_rush <- inner_join(Player_rush,player,by="Player.Code")
 # Player_rush <- filter(Player_rush,Position == "RB")
@@ -159,10 +159,10 @@ Player_rush$Position <- as.character(Player_rush$Position)
  Player_rush$Position[Player_rush$Position == ""] <- NA
  Player_rush$Attempt[Player_rush$Attempt<1]  <- NA 
  Player_rush <- na.omit(Player_rush)
-Player_rush <- select(Player_rush,-1)
+Player_rush <-  dplyr::select(Player_rush,-1)
 colnames(Player_rush)[4] <- "Team.Code1"
 Player_rush <- inner_join(Player_rush,Team,by ="Team.Code1" )
-Player_rush <- select(Player_rush,-4,-8)
+Player_rush <-  dplyr::select(Player_rush,-4,-8)
 Player_rush <- inner_join(Player_rush,Team_stats,by = "TEAM")
 Player_rush1 <- filter(Player_rush,Position == "RB")
 
@@ -175,7 +175,7 @@ Player_rush1 <- filter(Player_rush,Position == "RB")
 As a NCAA college football fan, I have some knowledge of football stats and I also have some expection of my data exploration. I'm expecting a lower number of players runs the ball more time. I'm also expecting a player will have higher YPA when his team are better and the opponent FPI or opponent defense efficiency are low. 
 
 ## 1. Yards per Carry vs. Number of Attempt
-```{r,warning=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 ggplot(data = Player_rush)+
   geom_point(mapping = aes(x=Attempt,y = YPA))+
   xlab("Number of rush")+
@@ -196,7 +196,7 @@ ggplot(data = Player_rush1)+
 For those two plots, I displayed the relationship and effect between yards per attempt and the number of attempt. it doesn't account for the quality of opposition faced or the strength of own team. You can find that for all player position and running back player, they have similer trend for yards per attempt and number of rush.
 
 ##2. Distribution of Rushing Attempt and Yards per Carry
-```{r,warning=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = YPA) +
   geom_histogram(bins = 50, fill = "#0c4c8a",colour="black") +
@@ -217,7 +217,7 @@ Those two graphs above shows the distribution of YPA and rushing attempts. From 
 
 
 ##3. Relationship between YPA and other variables.
-```{r,warning=FALSE,comment=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = FPI, y = YPA) +
   geom_point(color = "blue4") +
@@ -226,7 +226,7 @@ ggplot(data = Player_rush1) +
   theme_classic()
 ```
 
-```{r,warning=FALSE,comment=FALSE}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = Opp.FPI, y = YPA) +
   geom_point(color = "black") +
@@ -238,7 +238,7 @@ ggplot(data = Player_rush1) +
 ```
 I've made those two plot to explore the relationship between YPA of a player with the strength of his own team and the opponent team. Although it is not very clear, but figure 2.5 shows that a player will have higher YPA when his team has a higher power index. 
 
-```{r,warning=FALSE}
+```{r,warning=FALSE,message=FALSE}
 ggplot(data = Player_rush1) +
   aes(x = Opp.Yds.Allowed, y = YPA) +
   geom_point(color = "#0c4c8a") +
@@ -275,84 +275,200 @@ Models selected to explain the YPA variable are:
 ##Model Choice
 ### Variable selection
 Outcome Variable - YPA
-###
-Classic Linear Regression
-```{r}
-# Model 1
+
+### Correlation plot
+```{r,warning=FALSE}
+Player_rush2 <-  dplyr::select(Player_rush1,1:3,7:20)
+correlations <- cor(Player_rush2)
+
+corrplot(correlations)
+```
+
+###Classic Linear Regression
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+################ Model 1
 fit1 <- lm(YPA~ Attempt+FPI+OVERALL+YPC,data = Player_rush1)
+
+summary(fit1)
+
+################ Model 2
+fit2 <- lm(YPA~Opp.Att.Allowed+Opp.Yds.Allowed+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,data = Player_rush1)
+
+summary(fit2)
+################ Model 3
+fit3 <- lm(YPA ~ Attempt+Rush.Att+OFFENSE+YPC+OVERALL+FPI+YPC:Opp.Ypc.Allowed,data = Player_rush1)
+
+
+summary(fit3)
+
+AIC(fit1, fit2, fit3)
+anova(fit1, fit2, fit3)
+binnedplot(predict(fit1),resid(fit1))
+binnedplot(predict(fit2),resid(fit2))
+binnedplot(predict(fit3),resid(fit3))
+
+
+
+```
+\vspace{12pt}
+\vspace{12pt}
+Based on the output and compare the AIC and residual plot, I think model 3 is better than others. Looking at the summary output, we can see that Attempt, YPC, OVERALL, and FPI are significant. But I think it is still meaningfull to keep the rest variables.
+
+With each unit increase in Attempt, the YPA (Yard per attempt) increase by 0.003. 
+One unit increase in YPC, the YPA increases by 0.97. One unit increase in OVERALL Efficiency, the YPA decrease by 0.057. With each unit increase in FPI, the YPA would increase by 0.085.
+
+\vspace{12pt}
+\vspace{12pt}
+### Multilevel Modelling
+
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+# Random intercept 
+m1 <- lmer(YPA~Attempt+FPI+OFFENSE+Rush.Att+YPC+Opp.Ypc.Allowed+(1|TEAM),data=Player_rush1) 
+summary(m1)
+m2 <- lmer(YPA~ Attempt+FPI+YPC+OVERALL+Rush.Att+ Opp.Ypc.Allowed+(1|TEAM),Player_rush1)
+summary(m2)
+
+AIC(m2,m1)
+binnedplot(predict(m2),resid(m2))
+binnedplot(predict(m1),resid(m1))
+anova(m2,m1)
+```
+\vspace{12pt}
+\vspace{12pt}
+The above models were created by using the fixed effect to YPA (Yard per Attempt), controlling for by-Team variability.
+Looking at their binnedplot and anova test, I think model m2 is better since all the points in binned residual plot are within the range and it has the lower AIC, BIC and deviance. 
+\vspace{12pt}
+\vspace{12pt}
+From the output, when other variables remain constant, each unit increase of Attempt, the YPA increases by 0.003 on average; with every unit increase of own team FPI, YPA increases 0.085669 ; One unit increase in YPC , the YPA increase by 0.86.  For the team overall efficiency factor, with each unit increase , the YPA would decrease by 0.05; one unit increase in opponent yard per carry allowed, YPA will decreases 0.04,which is meaningful in reality becasue the better running defense on opponent teams keep the runner running less.
+\vspace{12pt}
+\vspace{12pt}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+# Random slope:
+m3 <- lmer(YPA~Attempt+FPI+YPC+OVERALL+Rush.Att+Opp.Ypc.Allowed+(1+Attempt|TEAM),Player_rush1)
+summary(m3)
+```
+\vspace{12pt}
+\vspace{12pt}
+One unit increase in Attempt, the YPA (Yard per attempt) increase by 0.002. One unit increase in FPI, the YPA increase by 0.06. With each unit increase in team YPC (Yard per carry), the YPA for individual player  would increase by 0.77. Compared to own team, when the opponent yard per carry allowed changed one unit, the YPA will decrease by 0.034.
+\vspace{12pt}
+\vspace{12pt}
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+# Random slope and random intercept:
+m4 <- lmer(YPA~Attempt+FPI+YPC+OVERALL+Rush.Att+Opp.Ypc.Allowed+(1|TEAM)+(1+Attempt|TEAM),Player_rush1)
+summary(m4)
+```
+\vspace{12pt}
+\vspace{12pt}
+In this model. For the random effect output, it represents the estimated variability in the intercept. For the fixed effect output, the coefficient of Attempt, FPI and YPC (Team Yard per Carry) are positive, which indicates a change in unit would lead to an increase in the YPA.The other variables' coefficients are negative change indicate that in one unit change would lead to a decrease in YPA.
+\vspace{12pt}
+\vspace{12pt}
+## Model Check
+
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+
 # Residual plot
-plot(fit1)
+plot(fit1, which = 1)
+plot(fit2, which = 1)
+plot(fit3, which = 1)
 # Confidence interval
 coefplot(fit1)
 kable(head(confint(fit1)))
-# Actual vs Fitted
-plot(log(Player_rush1$YPA), fitted(fit1),xlab="actual value",ylab="fitted values")+
-  abline(v=15,h=15,0,1, col="red")
-
-# Model 2
-fit2 <- lm(YPA~Opp.Att.Allowed+Opp.Yds.Allowed+Opp.Ypc.Allowed+Opp.Ypg.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff,data = Player_rush1)
-# Residual plot
-plot(fit2, which = 1)
-# Confidence interval
 coefplot(fit2)
 kable(head(confint(fit2)))
-# Actual vs Fitted
-plot(log(Player_rush1$YPA), fitted(fit2),xlab="actual value",ylab="fitted values")+
-  abline(v=15,h=15,0,1, col="red")
-
-# Model 3
-fit3 <- lm(YPA ~ Attempt+Rush.Att+OFFENSE+YPC+OVERALL+FPI+YPC:Opp.Ypc.Allowed,data = Player_rush1)
-# Residual plot
-plot(fit3, which = 1)
-# Confidence interval
 coefplot(fit3)
 kable(confint(fit3))
 # Actual vs Fitted
+plot(log(Player_rush1$YPA), fitted(fit1),xlab="actual value",ylab="fitted values")+
+  abline(v=15,h=15,0,1, col="red")
+plot(log(Player_rush1$YPA), fitted(fit2),xlab="actual value",ylab="fitted values")+
+  abline(v=15,h=15,0,1, col="red")
 plot(log(Player_rush1$YPA), fitted(fit3),xlab="actual value",ylab="fitted values")+
   abline(v=15,h=15,0,1, col="red")
 
-
 # Outliertest - Detecting the Unusual Data
+outlierTest(fit3)
+influenceIndexPlot(fit3)
+par(mfrow=c(1,3))
+plot(1:100,resid(fit3)[1:100]); abline(h=0,lty=2,col="grey",main="fitted vs residual")
+acf(resid(fit3))
+pacf(resid(fit3))
+
+outlierTest(fit2)
+influenceIndexPlot(fit2)
+par(mfrow=c(1,3))
+plot(1:100,resid(fit2)[1:100]); abline(h=0,lty=2,col="grey",main="fitted vs residual")
+acf(resid(fit2))
+pacf(resid(fit2))
+
 outlierTest(fit1)
 influenceIndexPlot(fit1)
-hatvalues(fit1)
 par(mfrow=c(1,3))
 plot(1:100,resid(fit1)[1:100]); abline(h=0,lty=2,col="grey",main="fitted vs residual")
 acf(resid(fit1))
 pacf(resid(fit1))
 
-anova(fit1, fit2, fit3)
-lrtest(fit1, fit2, fit3)
+
+
+binnedplot(predict(m3),resid(m3))
+binnedplot(predict(m4),resid(m4))
+binnedplot(predict(m2),resid(m2))
+binnedplot(predict(m1),resid(m1))
+
+# Anova
+anova(m4, m3, m2, m1,refit = FALSE)
+anova(m4, m3, m2, m1,fit1, fit2, fit3,refit = FALSE)
+
+
+Model <- lmer(YPA~Attempt+FPI+YPC+OVERALL+Rush.Att+Opp.Ypc.Allowed+(1+Attempt|TEAM),Player_rush1[1:260,])
+
+predict <- predict(Model,data = Player_rush1[261:388,])
+
+bias <- mean(abs(predict-(Player_rush1[1:260,]$YPA)/(Player_rush1[261:388,]$YPA)))
+
+bias
 ```
-### Multilevel Modelling
-```{r,warning=FALSE}
+ 
+ 
+## Model Improvement
+ 
 
-m1 <- lmer(YPA~Attempt+FPI+OFFENSE+OVERALL+Rush.Att+YPC*Opp.Ypc.Allowed+Opp.FPI+Opp.Def.Eff+Opp.Overall.Eff+(1|TEAM),data=Player_rush1) 
-display(m1)
-coefplot(m1)
+```{r,warning=FALSE,comment=FALSE,message=FALSE}
+m5 <- lmer(YPA~Attempt+FPI+Rush.Att+YPC*Opp.Ypc.Allowed+(1+Attempt|TEAM),Player_rush1)
+summary(m5)
+anova(m5, m3)
+binnedplot(predict(m5),resid(m5))
 
-m2 <- lmer(YPA~ Attempt+FPI*Opp.FPI+OVERALL*Opp.Overall.Eff+Rush.Att +(0+YPC|TEAM),Player_rush1)
-display(m2)
-coefplot(m2)
+Model5 <- lmer(YPA~Attempt+FPI+Rush.Att+YPC*Opp.Ypc.Allowed+(1+Attempt|TEAM),Player_rush1[1:260,])
 
-m3 <- lmer(YPA~ OFFENSE+OVERALL+Attempt+(1|Attempt)+(1|YPC)+(0+FPI|TEAM),Player_rush1)
-display(m3)
-coefplot(m3)
+predict5 <- predict(Model5,data = Player_rush1[261:388,])
 
+bias5 <- mean(abs(predict5-(Player_rush1[1:260,]$YPA)/(Player_rush1[261:388,]$YPA)))
 
-anova(m1, m2, m3, refit = FALSE)
+bias5
+
 ```
-##Interpretation
-##Model Checking
-
+ \vspace{12pt}
+ I try to improve the model by considering interaction to the Model. However, the output shows that it doesn't fit the data better with interaction. Therefore, I think model 3 (m3) still should be chose in to compare the player's performance.
+ \vspace{12pt}
+ 
 #Discussion
+The goal of this project is trying to determine factors that may have impact on player's yards gained per rush and who could be the better runner. After EDA and multilevel model
+building process, I found out that number of rush ofr individual(Attempt), Team average yards gain per carry, Team Power index(FPI), Opponent yards per carry allowed and Team average rushing attempts are factors that may affact the YPA for individual player. Attempts, FPI and YPC have positive effect on the YPA, other variables have negative effect. 
+Although, the anova test shows that multilevel model doesn't fit my data well, I still think multilevel model should be use in my model choice. The reason is that different team will have thier own factors that may influence the player's performance as well as their opponent average power. Also, the AIC, BIC and deviance has no big difference with classic linear modelling.
+
+## Implitcation
+
+From all the results and the interpretations of the models fitted above, it's not reasonable to use these models to predict player's performance; while the models do explain relationship between the YPA and other variables.
+
+
 ##Limitation
+
+1. The data are limited size. Although there are lots of variables and observations in college football, but my project are focusing on a small scope that constrain the data size.
+2. Some variables are not real stats, such as FPI and Team Efficiency. All those data are from ESPN and based on their own math formula.  
+
+
 ##Future Direction
+I nned do further research and study for the multilevel model building to improve the  model from this project. It is possible to use multilevel model to predict player's performance for next season. However, it requires more knowlege that I'm not understdand well. I think this model could used to calculated "correct" performace on all players even though they are in different team and facing different opponent.
 
-```{r,warning=FALSE}
-Player_rush2 <- select(Player_rush1,1:3,7:20)
-correlations <- cor(Player_rush2)
 
-corrplot(correlations,method="circle")
-```
 
